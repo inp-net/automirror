@@ -22,7 +22,11 @@ class Env(BaseModel):
     GITLAB_REPOSITORY_SELECTOR: str
 
 
-env = typed_dotenv.load_into(Env, filename=".env")
+from os import environ
+
+env = typed_dotenv.load_into(
+    Env, filename=".env" if environ.get("ENV") == "dev" else None
+)
 
 
 def glab_gql(query: str, variables: dict, authed=True):
