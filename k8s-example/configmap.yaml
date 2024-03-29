@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: automirror-config
+  namespace: automirror
+
+data:
+  GITHUB_USERNAME: net7toulouse
+  GITLAB_HOST: https://git.inpt.fr
+  GITLAB_REPOSITORY_SELECTOR: sur github
+  GITHUB_ORGANIZATION: inp-net

@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: automirror-cronjob
+  namespace: automirror
+spec:
+  schedule: 0 1 * * 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: automirror
+              image: uwun/automirror:latest
+              imagePullPolicy: IfNotPresent
+              envFrom:
+                - secretRef:
+                    name: automirror-secrets
+                - configMapRef:
+                    name: automirror-config
