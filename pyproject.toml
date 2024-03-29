@@ -7,7 +7,6 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-PyGithub = "^2.3.0"
 typed-dotenv = {extras = ["pydantic"], version = "^1.0.1"}
 
 
