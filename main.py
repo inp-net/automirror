@@ -47,7 +47,6 @@ def upsert_github_repo(repo) -> bool:
         == 200
     )
     description = f"{repo['description']:.200} · Mirror of {repo['webUrl']}."
-    properties = {"Upstream": repo["webUrl"]}
     if exists:
         print(
             f"[{path:20}] Updating repository {repo['name']} at {env.GITHUB_ORGANIZATION}/{path}..."
@@ -55,7 +54,9 @@ def upsert_github_repo(repo) -> bool:
         url = f"https://api.github.com/repos/{env.GITHUB_ORGANIZATION}/{path}"
         response = requests.patch(
             url,
-            json={"description": description, "custom_properties": properties},
+            json={
+                "description": description,
+            },
             headers={"Authorization": f"Bearer {env.GITHUB_TOKEN}"},
         )
     else:
@@ -68,7 +69,6 @@ def upsert_github_repo(repo) -> bool:
             json={
                 "name": path,
                 "description": description,
-                "custom_properties": properties,
             },
             headers={"Authorization": f"Bearer {env.GITHUB_TOKEN}"},
         )
