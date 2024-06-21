@@ -41,11 +41,11 @@ def glab_gql(query: str, variables: dict, authed=True):
     return response["data"]
 
 
-def upsert_github_repo(repo) -> bool:
+def upsert_github_repo(repo) -> str:
     """
     Returns the github name of the created/updated repository.
     """
-    path = repo["fullPath"].split("/")[-1]
+    path = '-'.join(part.replace("-ecosystem", "") for part in repo["fullPath"].split("/")[1:])
     exists = (
         requests.get(f"https://github.com/{env.GITHUB_ORGANIZATION}/{path}").status_code
         == 200
