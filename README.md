@@ -11,8 +11,7 @@ git clone https://git.inpt.fr/inp-net/automirror
 cd automirror
 cp .env.example .env
 # Edit .env file to fill with your own values
-poetry install
-poetry run python main.py
+go run main.go
 ```
 
 ### Docker
@@ -43,4 +42,3 @@ The configuration is done through environment variables. You can find an example
 ### About `GITHUB_TOKEN` and `GITHUB_USERNAME`
 
 Those two variables will be used to construct the mirror URL passed to gitlab, as `https://{USERNAME}:{TOKEN}@github.com/{ORGANIZATION}/{REPOSITORY}`.
-

@@ -1,0 +1,21 @@
+to: github.com
+from: git.inpt.fr
+
+defaults:
+  topics: [sur github]
+  subgroups:
+    flatten: "-"
+
+orgs:
+  inp-net:
+    - from: net7
+    - from: inp-net
+    - from: churros
+      prefix: churros-
+      except: [churros/churros]
+    - from: churros
+      only: [churros/churros]
+
+  tvn7: [from: tvn7]
+  japan7: [from: japan7]
+  7fault: [from: 7fault]

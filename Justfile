@@ -1,2 +1,2 @@
 dev:
-	ENV=dev poetry run python main.py
+	go run main.go
