@@ -32,3 +32,4 @@ LICENSE
 Justfile
 README.md
 .gitignore
+Dockerfile
