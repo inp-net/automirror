@@ -82,7 +82,7 @@ var env Env
 
 // loadEnv loads environment variables from a .env file or system environment.
 func loadEnv() error {
-	if os.Getenv("ENV") == "dev" {
+	if _, err := os.Stat(".env"); err == nil {
 		err := godotenv.Load(".env")
 		if err != nil {
 			return err
@@ -227,19 +227,30 @@ func upsertGitHubRepo(repo map[string]interface{}, mirrorConfigUsed MirrorDefini
 func redactUrl(rawUrl string) string {
 	parsedUrl, _ := url.Parse(rawUrl)
 	if parsedUrl.User != nil {
-		parsedUrl.User = url.UserPassword("???", "???")
+		parsedUrl.User = url.UserPassword("---", "---")
 	}
 	return parsedUrl.String()
 }
 
 // setGitLabMirror sets up a GitLab repository to mirror a GitHub repository.
 func setGitLabMirror(repo map[string]interface{}, githubName string, githubOrg string) error {
-	projectID := strings.Split(repo["id"].(string), "/")[1]
+	ll.Debug("Setting up mirror for %+v", repo)
+	projectIdUrl, err := url.Parse(repo["id"].(string))
+	if err != nil {
+		return fmt.Errorf("invalid gitlab project ID %q: %w", repo["id"], err)
+	}
+
+	projectID := projectIdUrl.Path
+	for strings.Contains(projectID, "/") {
+		projectID = strings.SplitN(projectID, "/", 2)[1]
+	}
 	githubRepoUrl := fmt.Sprintf("https://%s:%s@%s/%s/%s.git", env.GitHubUsername, env.GitHubToken, config.To, githubOrg, githubName)
 
 	mirrorsUrl := fmt.Sprintf("https://%s/api/v4/projects/%s/remote_mirrors", config.From, projectID)
 	req, _ := http.NewRequest("GET", mirrorsUrl, nil)
 	req.Header.Set("PRIVATE-TOKEN", env.GitLabToken)
+
+	ll.Debug("%s %s", req.Method, req.URL)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -249,14 +260,48 @@ func setGitLabMirror(repo map[string]interface{}, githubName string, githubOrg s
 	defer resp.Body.Close()
 
 	var mirrors []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&mirrors); err != nil {
-		return err
+	response := new(bytes.Buffer)
+	response.ReadFrom(resp.Body)
+
+	if err := json.Unmarshal(response.Bytes(), &mirrors); err != nil {
+		return fmt.Errorf("could not decode GitLab API response %q: %w", response.String(), err)
 	}
 
 	for _, mirror := range mirrors {
 		if redactUrl(mirror["url"].(string)) == redactUrl(githubRepoUrl) {
-			ll.Info("Mirror already exists for %s at %s/%s to %s/%s.", repo["name"], config.From, repo["fullPath"], githubOrg, githubName)
+			ll.Debug("Mirror already exists for %s at %s/%s to %s/%s.", repo["name"], config.From, repo["fullPath"], githubOrg, githubName)
 			return nil
+		}
+	}
+
+	// Delete existing mirrors for github.com
+	for _, mirror := range mirrors {
+		mirrorUrl, err := url.Parse(mirror["url"].(string))
+		if err != nil {
+			continue
+		}
+		if mirrorUrl.Host == config.To {
+			mirrorID := mirror["id"].(float64)
+			ll.Log("Deleting", "yellow", "existing %s mirror on %s: %q [dim](mirror ID is %d)[reset]", config.To, repo["webUrl"], redactUrl(mirrorUrl.String()), int(mirrorID))
+			deleteUrl := fmt.Sprintf("https://%s/api/v4/projects/%s/remote_mirrors/%d", config.From, projectID, int(mirrorID))
+			req, err = http.NewRequest("DELETE", deleteUrl, nil)
+			if err != nil {
+				return fmt.Errorf("could not prepare mirror deletion http request for %s: %w", redactUrl(mirrorUrl.String()), err)
+			}
+
+			req.Header.Set("PRIVATE-TOKEN", env.GitLabToken)
+
+			ll.Debug("%s %s", req.Method, req.URL)
+
+			resp, err = client.Do(req)
+			if err != nil {
+				return err
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode >= 400 {
+				return fmt.Errorf("could not delete existing %s mirror %q: GitLab API error: %s", config.To, redactUrl(mirrorUrl.String()), resp.Status)
+			}
 		}
 	}
 
@@ -299,13 +344,13 @@ func processProject(project map[string]interface{}, mirrorDef MirrorDefinition, 
 
 	githubName, err := upsertGitHubRepo(project, mirrorDef, org)
 	if err != nil {
-		ll.ErrorDisplay("%s: could not upsertGitHubRepo", err, githubName)
+		ll.ErrorDisplay("target repo %s: could not upsertGitHubRepo", err, githubNameFromGitlabPath(project["fullPath"].(string), mirrorDef))
 		return
 	}
 
 	err = setGitLabMirror(project, githubName, org)
 	if err != nil {
-		ll.ErrorDisplay("%s: could not setGitLabMirror", err, githubName)
+		ll.ErrorDisplay("target repo %s: could not setGitLabMirror", err, githubName)
 		return
 	}
 
@@ -322,7 +367,7 @@ func prepareSyncForMirror(githubOrg string, configIndex int, mirror MirrorDefini
 	group(fullPath: $group) {
 		projects {
 			nodes {
-				fullPath, webUrl, name, topics, id
+				fullPath, webUrl, name, topics, id, description
 			}
 		}
 }
