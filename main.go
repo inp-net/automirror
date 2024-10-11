@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 
@@ -15,6 +16,7 @@ import (
 
 	"dario.cat/mergo"
 	ll "github.com/ewen-lbh/label-logger-go"
+	"github.com/google/uuid"
 	"github.com/invopop/jsonschema"
 	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
@@ -158,6 +160,81 @@ func githubOrgConfig(org string) ([]MirrorDefinition, bool) {
 	}
 
 	return []MirrorDefinition{}, false
+}
+
+func isGithubRepoEmpty(githubUrl string) (bool, error) {
+	cmd := exec.Command("git", "ls-remote", githubUrl)
+	out, err := cmd.Output()
+	if err != nil {
+		return false, fmt.Errorf("while determining if %s is empty: %w", githubUrl, err)
+	}
+
+	return len(strings.TrimSpace(string(out))) == 0, nil
+}
+
+func initializeGithubRepo(repo map[string]any, githubRepoUrl string) error {
+	// Generate uuid for the repo directory
+	repoUID := uuid.NewString()
+
+	// Cleanup
+	defer func() {
+		ll.Debug("Cleaning up %s", repoUID)
+		cmd := exec.Command("rm", "-rf", repoUID)
+		err := cmd.Run()
+		if err != nil {
+			ll.Error("Could not delete clone temp. directory %s: %s", repoUID, err)
+		}
+	}()
+
+	// Clone the repo
+	ll.Debug("Cloning %s to %s", repo["httpUrlToRepo"], repoUID)
+	cmd := exec.Command("git", "clone", repo["httpUrlToRepo"].(string), repoUID)
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("while cloning %s: %w", repo["httpUrlToRepo"], err)
+	}
+
+	// Get default branch name
+	cmd = exec.Command("git", "symbolic-ref", "--short", "HEAD")
+	cmd.Dir = repoUID
+	out, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("while getting default branch name for repo %s at %s: %w", repo["httpUrlToRepo"], repoUID, err)
+	}
+
+	defaultBranch := strings.TrimSpace(string(out))
+	ll.Debug("Default branch for %s is %s", repo["httpUrlToRepo"], defaultBranch)
+
+	// Configure authentication
+	cmd = exec.Command("git", "config", "user.name", env.GitHubUsername)
+	cmd.Dir = repoUID
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("while configuring git user.name: %w", err)
+	}
+
+	// Push to github
+	ll.Debug("Pushing to %s", githubRepoUrl)
+	targetUrl, err := url.Parse(githubRepoUrl)
+	if err != nil {
+		return fmt.Errorf("target github repo url %q is invalid: %w", githubRepoUrl, err)
+	}
+
+	// Set credentials
+	targetUrl.User = url.UserPassword(env.GitHubUsername, env.GitHubToken)
+	cmd = exec.Command("git", "push", githubRepoUrl, defaultBranch)
+	cmd.Dir = repoUID
+	_, err = cmd.Output()
+	if err != nil {
+		out = []byte{}
+		switch err := err.(type) {
+		case *exec.ExitError:
+			out = err.Stderr
+		}
+		return fmt.Errorf("while pushing to %s: %w: %s", githubRepoUrl, err, string(out))
+	}
+
+	return nil
 }
 
 // upsertGitHubRepo creates or updates a GitHub repository and returns its name.
@@ -354,6 +431,21 @@ func processProject(project map[string]interface{}, mirrorDef MirrorDefinition, 
 		return
 	}
 
+	githubRepoUrl := fmt.Sprintf("https://%s/%s/%s", config.To, org, githubName)
+
+	if empty, err := isGithubRepoEmpty(githubRepoUrl); err != nil {
+		ll.ErrorDisplay("while checking if %s is empty", err, githubRepoUrl)
+	} else if empty {
+		ll.Log("Pushing", "green", "%s/%s", org, githubName)
+		err = initializeGithubRepo(project, githubRepoUrl)
+		if err != nil {
+			ll.ErrorDisplay("target repo %s: could not push to github repo", err, githubName)
+			return
+		}
+	} else {
+		ll.Debug("Repo %s is not empty, skipping initialization", githubRepoUrl)
+	}
+
 	ll.Log("Finished", "green", "%s/%s", org, githubName)
 }
 
@@ -367,7 +459,7 @@ func prepareSyncForMirror(githubOrg string, configIndex int, mirror MirrorDefini
 	group(fullPath: $group) {
 		projects {
 			nodes {
-				fullPath, webUrl, name, topics, id, description
+				fullPath, webUrl, name, topics, id, description, httpUrlToRepo
 			}
 		}
 }
