@@ -11,31 +11,36 @@ import (
 	"sync"
 
 	"dario.cat/mergo"
+	"github.com/invopop/jsonschema"
 	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
 )
 
-type MirrorDefinition struct {
-	From      string   `yaml:"from"`
-	Except    []string `yaml:"except"`
-	Only      []string `yaml:"only"`
-	Prefix    string   `yaml:"prefix"`
-	Suffix    string   `yaml:"suffix"`
-	Topics    []string `yaml:"topics"`
+type MirrorDefaults struct {
+	Except    []string `json:"except,omitempty"`
+	Only      []string `json:"only,omitempty"`
+	Prefix    string   `json:"prefix,omitempty"`
+	Suffix    string   `json:"suffix,omitempty"`
+	Topics    []string `json:"topics,omitempty"`
 	Subgroups struct {
-		Flatten string `yaml:"flatten"`
-	}
+		Flatten string `json:"flatten"`
+	} `json:"subgroups,omitempty"`
 }
 
-// Config holds the configuration for the
+type MirrorDefinition struct {
+	From string `json:"from"`
+	MirrorDefaults
+}
+
+// Config holds the configuration
 type Config struct {
-	To       string                        `yaml:"to" jsonschema:"enum=github.com"`
-	From     string                        `yaml:"from"`
-	Orgs     map[string][]MirrorDefinition `yaml:"orgs"`
-	Defaults MirrorDefinition              `yaml:"defaults"`
+	To       string                        `json:"to" jsonschema:"enum=github.com"`
+	From     string                        `json:"from"`
+	Orgs     map[string][]MirrorDefinition `json:"orgs"`
+	Defaults MirrorDefaults                `json:"defaults,omitempty"`
 }
 
-// Actual configuratio
+// Actual configuration
 var config Config
 
 func loadConfig(path string) error {
@@ -126,7 +131,10 @@ func githubOrgConfig(org string) ([]MirrorDefinition, bool) {
 	if conf, found := config.Orgs[org]; found {
 		merged := make([]MirrorDefinition, len(conf))
 		for i, c := range conf {
-			merged[i] = config.Defaults
+			merged[i] = MirrorDefinition{
+				From:           c.From,
+				MirrorDefaults: config.Defaults,
+			}
 			mergo.Merge(&merged[i], c)
 		}
 		return merged, true
@@ -379,6 +387,14 @@ func prepareSyncForGithubOrg(org string) ([]struct {
 
 // main is the entry point of the application.
 func main() {
+	// --print-jsonschema
+	if len(os.Args) > 1 && os.Args[1] == "--print-jsonschema" {
+		schema := jsonschema.Reflect(&Config{})
+		out, _ := json.Marshal(&schema)
+		fmt.Println(string(out))
+		return
+	}
+
 	err := loadEnv()
 	if err != nil {
 		fmt.Println("Error loading environment variables:", err)
