@@ -28,17 +28,43 @@ You'll find an example Kubernetes deployment in the `k8s-example` directory that
 
 ## Configuration
 
-The configuration is done through environment variables. You can find an example in the `.env.example` file.
+### Credentials
+
+Credentials are set with environment variables. Automirror will also load a .env if the file exists. You can find an example in the `.env.example` file.
 
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `GITHUB_TOKEN` | The personal access token to use to authenticate to the github API. Must have the `administration:write` scope, and also permissions to push to the repositories that will be created | |
-| `GITHUB_USERNAME` | The username of the github user that will be used to create the mirrored repository | |
-| `GITHUB_ORGANIZATION` | The name of the github organization where the mirrored repository will be created. Personal accounts are not supported yet. | |
+| `GITHUB_USERNAME` | The username of the github user that will be used to create the mirrored repositories | |
 | `GITLAB_TOKEN` | The personal access token to use to authenticate to the gitlab API. Must have the necessary permissions to query and update push mirrors on a project | |
-| `GITLAB_HOST` | URL to the Gitlab instance. | `https://git.inpt.fr` |
-| `GITLAB_REPOSITORY_SELECTOR` | A topic (can contain spaces) that will be used to search for projects to mirror in the whole gitlab instance. Only public repositories will be mirrored (the query to get the list of repositories to mirror is done without any authentication) | `mirrored to github` |
 
-### About `GITHUB_TOKEN` and `GITHUB_USERNAME`
+`GITHUB_TOKEN` and `GITHUB_USERNAME` will be used to construct the mirror URL passed to gitlab, as `https://{USERNAME}:{TOKEN}@github.com/{ORGANIZATION}/{REPOSITORY}`.
 
-Those two variables will be used to construct the mirror URL passed to gitlab, as `https://{USERNAME}:{TOKEN}@github.com/{ORGANIZATION}/{REPOSITORY}`.
+### Mirrors
+
+Configuration of mirrors is defined in a YAML file. A JSON Schema is available at `config.schema.json`, and example config files are in `examples/`.
+
+```yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ewen-lbh/automirror/main/config.schema.json
+to: github.com # Target git host. Only github.com is supported for now.
+from: my-gitlab.example.com # Source git host. Only gitlab hosts are supported for now.
+
+# Set defaults to avoid repeating yourself
+defaults:
+    topics: [mirrored to github] # selects repositories that have one of these topics. Providing an empty array selects no repositories.
+    subgroups: 
+        flatten: "-" # with what character to join gitlab sub-groups to compute the github repo name. For example, if the gitlab project is `group/subgroup/project`, the github repo name will be `subgroup-project`
+    
+orgs:
+    # Repositories to mirror to github.com/my-github-org
+    my-github-org:
+        - from: foo # Mirror all public repositories from gitlab org "foo" that have the topic "mirrored to github" (see `defaults`)
+        - from: bar 
+          prefix: baz # Prefix the github repository names with "baz"
+          # there's also `suffix`
+        - from: qux 
+          except: [qux/example] # Don't mirror the repository "qux/example"
+        - from: spam 
+          only: [spam/eggs, spam/bacon] # Only mirror repositories "spam/eggs" and "spam/bacon"
+```
+        
