@@ -173,7 +173,7 @@ func upsertGitHubRepo(repo map[string]interface{}, mirrorConfigUsed MirrorDefini
 		return "", err
 	}
 
-	// client := &http.Client{}
+	client := &http.Client{}
 	var req *http.Request
 
 	if resp.StatusCode == 200 {
@@ -210,15 +210,15 @@ func upsertGitHubRepo(repo map[string]interface{}, mirrorConfigUsed MirrorDefini
 
 	ll.Debug("%s %s", req.Method, req.URL)
 
-	// resp, err = client.Do(req)
-	// if err != nil {
-	// 	return "", err
-	// }
-	// defer resp.Body.Close()
+	resp, err = client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
 
-	// if resp.StatusCode >= 400 {
-	// 	return "", fmt.Errorf("GitHub API error: %s", resp.Status)
-	// }
+	if resp.StatusCode >= 400 {
+		return "", fmt.Errorf("GitHub API error: %s", resp.Status)
+	}
 
 	return path, nil
 }
@@ -275,11 +275,11 @@ func setGitLabMirror(repo map[string]interface{}, githubName string, githubOrg s
 
 	ll.Debug("%s %s", req.Method, req.URL)
 
-	// resp, err = client.Do(req)
-	// if err != nil {
-	// 	return err
-	// }
-	// defer resp.Body.Close()
+	resp, err = client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
 
 	return nil
 }
