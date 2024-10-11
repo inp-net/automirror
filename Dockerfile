@@ -26,6 +26,9 @@ FROM alpine:3.18
 # Set the working directory inside the container
 WORKDIR /app
 
+# Install git
+RUN apk add --no-cache git
+
 # Copy the compiled binary from the build stage
 COPY --from=build /app/automirror /app/automirror
 
