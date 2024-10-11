@@ -1,6 +1,4 @@
-<center> <img src="./logo.png" width="50" height="50" align="left" alt="automirror">  </center>
-
-
+# <center> <img src="./wordmark.png" width="50" height="50" align="center" alt="automirror">  </center>
 
 Automatically create a mirror repository on a github organization and add a push mirror to the corresponding gitlab repository
 
