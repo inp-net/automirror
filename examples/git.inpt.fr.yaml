@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=./config.schema.json
+# yaml-language-server: $schema=../config.schema.json
 to: github.com
 from: git.inpt.fr
 
@@ -20,3 +20,4 @@ orgs:
   tvn7: [from: tvn7]
   japan7: [from: japan7]
   7fault: [from: 7fault]
+  n7beats: [from: n7beats]

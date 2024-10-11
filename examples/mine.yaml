@@ -1,0 +1,5 @@
+# yaml-language-server: $schema=../config.schema.json
+to: github.com
+from: git.inpt.fr
+orgs:
+  ewen-lbh: [from: lebihae]
