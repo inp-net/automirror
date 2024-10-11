@@ -10,7 +10,11 @@ import (
 	"strings"
 	"sync"
 
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
+
 	"dario.cat/mergo"
+	ll "github.com/ewen-lbh/label-logger-go"
 	"github.com/invopop/jsonschema"
 	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
@@ -28,8 +32,15 @@ type MirrorDefaults struct {
 }
 
 type MirrorDefinition struct {
-	From string `json:"from"`
-	MirrorDefaults
+	From      string   `json:"from"`
+	Except    []string `json:"except,omitempty"`
+	Only      []string `json:"only,omitempty"`
+	Prefix    string   `json:"prefix,omitempty"`
+	Suffix    string   `json:"suffix,omitempty"`
+	Topics    []string `json:"topics,omitempty"`
+	Subgroups struct {
+		Flatten string `json:"flatten"`
+	} `json:"subgroups,omitempty"`
 }
 
 // Config holds the configuration
@@ -129,13 +140,19 @@ func glabGql(query string, variables map[string]interface{}, authed bool) (map[s
 
 func githubOrgConfig(org string) ([]MirrorDefinition, bool) {
 	if conf, found := config.Orgs[org]; found {
+		ll.Debug("Org config for %s: %+v", org, conf)
 		merged := make([]MirrorDefinition, len(conf))
 		for i, c := range conf {
-			merged[i] = MirrorDefinition{
-				From:           c.From,
-				MirrorDefaults: config.Defaults,
-			}
-			mergo.Merge(&merged[i], c)
+			merged[i] = c
+			mergo.Merge(&merged[i], MirrorDefinition{
+				From:      c.From,
+				Except:    config.Defaults.Except,
+				Only:      config.Defaults.Only,
+				Prefix:    config.Defaults.Prefix,
+				Suffix:    config.Defaults.Suffix,
+				Topics:    config.Defaults.Topics,
+				Subgroups: config.Defaults.Subgroups,
+			})
 		}
 		return merged, true
 	}
@@ -160,7 +177,7 @@ func upsertGitHubRepo(repo map[string]interface{}, mirrorConfigUsed MirrorDefini
 	var req *http.Request
 
 	if resp.StatusCode == 200 {
-		fmt.Printf("[%25s] Updating repository %s at %s/%s...\n", path, repo["name"], githubOrg, path)
+		ll.Log("Updating", "cyan", "%s/%s", githubOrg, path)
 		url := fmt.Sprintf("https://api.github.com/repos/%s/%s", githubOrg, path)
 
 		reqBody := map[string]interface{}{
@@ -173,7 +190,7 @@ func upsertGitHubRepo(repo map[string]interface{}, mirrorConfigUsed MirrorDefini
 			return "", err
 		}
 	} else {
-		fmt.Printf("[%25s] Creating repository %s at %s/%s...\n", path, repo["name"], githubOrg, path)
+		ll.Log("Creating", "magenta", "%s/%s", githubOrg, path)
 		url := fmt.Sprintf("https://api.github.com/orgs/%s/repos", githubOrg)
 
 		reqBody := map[string]interface{}{
@@ -191,7 +208,7 @@ func upsertGitHubRepo(repo map[string]interface{}, mirrorConfigUsed MirrorDefini
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", env.GitHubToken))
 	req.Header.Set("Content-Type", "application/json")
 
-	fmt.Printf("[%25s] %s %s\n", path, req.Method, req.URL)
+	ll.Debug("%s %s", req.Method, req.URL)
 
 	// resp, err = client.Do(req)
 	// if err != nil {
@@ -217,11 +234,6 @@ func redactUrl(rawUrl string) string {
 
 // setGitLabMirror sets up a GitLab repository to mirror a GitHub repository.
 func setGitLabMirror(repo map[string]interface{}, githubName string, githubOrg string) error {
-	_, found := githubOrgConfig(githubOrg)
-	if !found {
-		return fmt.Errorf("org %s is not configured", githubOrg)
-	}
-
 	projectID := strings.Split(repo["id"].(string), "/")[1]
 	githubRepoUrl := fmt.Sprintf("https://%s:%s@%s/%s/%s.git", env.GitHubUsername, env.GitHubToken, config.To, githubOrg, githubName)
 
@@ -243,12 +255,12 @@ func setGitLabMirror(repo map[string]interface{}, githubName string, githubOrg s
 
 	for _, mirror := range mirrors {
 		if redactUrl(mirror["url"].(string)) == redactUrl(githubRepoUrl) {
-			fmt.Printf("[%25s] Mirror already exists for %s at %s/%s to %s/%s.\n", githubName, repo["name"], config.From, repo["fullPath"], githubOrg, githubName)
+			ll.Info("Mirror already exists for %s at %s/%s to %s/%s.", repo["name"], config.From, repo["fullPath"], githubOrg, githubName)
 			return nil
 		}
 	}
 
-	fmt.Printf("[%25s] Setting mirror for %s at %s/%s to %s/%s...\n", githubName, repo["name"], config.From, repo["fullPath"], githubOrg, githubName)
+	ll.Log("Mirroring", "magenta", "%s/%s <- %s", githubOrg, githubName, repo["webUrl"])
 
 	reqBody := map[string]interface{}{
 		"enabled":     true,
@@ -261,7 +273,7 @@ func setGitLabMirror(repo map[string]interface{}, githubName string, githubOrg s
 	req.Header.Set("PRIVATE-TOKEN", env.GitLabToken)
 	req.Header.Set("Content-Type", "application/json")
 
-	fmt.Printf("[%25s] %s %s\n", githubName, req.Method, req.URL)
+	ll.Debug("%s %s", req.Method, req.URL)
 
 	// resp, err = client.Do(req)
 	// if err != nil {
@@ -283,33 +295,28 @@ func githubNameFromGitlabPath(path string, mirrorConfigUsed MirrorDefinition) st
 func processProject(project map[string]interface{}, mirrorDef MirrorDefinition, org string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	githubName := githubNameFromGitlabPath(project["fullPath"].(string), mirrorDef)
-	fmt.Printf("[%25s] Processing project %s\n", githubName, project["fullPath"])
+	ll.Debug("Processing project %s", project["webUrl"])
 
 	githubName, err := upsertGitHubRepo(project, mirrorDef, org)
 	if err != nil {
-		fmt.Printf("[%25s] could not upsertGitHubRepo: %s\n", githubName, err)
+		ll.ErrorDisplay("%s: could not upsertGitHubRepo", err, githubName)
 		return
 	}
 
 	err = setGitLabMirror(project, githubName, org)
 	if err != nil {
-		fmt.Printf("[%25s] could not setGitLabMirror: %s\n", githubName, err)
+		ll.ErrorDisplay("%s: could not setGitLabMirror", err, githubName)
 		return
 	}
 
-	fmt.Printf("[%25s] Done!\n", githubName)
+	ll.Log("Finished", "green", "%s/%s", org, githubName)
 }
 
-func prepareSyncForGithubOrg(org string) ([]struct {
-	mirrorDef MirrorDefinition
-	projects  []map[string]any
-}, error) {
-	mirrors, found := githubOrgConfig(org)
-	if !found {
-		return nil, fmt.Errorf("org %s is not configured", org)
-	}
-
+func prepareSyncForMirror(githubOrg string, configIndex int, mirror MirrorDefinition) (output []struct {
+	mirrorDef   MirrorDefinition
+	projects    []map[string]any
+	configIndex int
+}, err error) {
 	query := `
 	query($group: ID!) {
 	group(fullPath: $group) {
@@ -321,65 +328,114 @@ func prepareSyncForGithubOrg(org string) ([]struct {
 }
 	}`
 
-	var output []struct {
-		mirrorDef MirrorDefinition
-		projects  []map[string]any
+	ll.Log("Fetching", "cyan", "projects on https://%s/%s [dim](from config orgs.%s[%d])[reset]", config.From, mirror.From, githubOrg, configIndex)
+	ll.Debug("Mirror config: %+v", mirror)
+	response, err := glabGql(query, map[string]any{
+		"group": mirror.From,
+	}, false)
+
+	if err != nil {
+		return output, fmt.Errorf("while getting gitlab repos: %w", err)
 	}
 
-	for _, mirror := range mirrors {
-		fmt.Printf("(%25s) Getting projects on %s for group %s...\n", org, config.From, mirror.From)
-		response, err := glabGql(query, map[string]any{
-			"group": mirror.From,
-		}, false)
+	if response["group"] == nil {
+		return output, fmt.Errorf("group %s not found", mirror.From)
+	}
 
-		if err != nil {
-			return output, fmt.Errorf("while getting gitlab repos: %w", err)
-		}
-
-		if response["group"] == nil {
-			fmt.Printf("(!%24s) group %s not found\n", org, mirror.From)
-			continue
-		}
-
-		if resp, ok := response["group"].(map[string]any)["projects"].(map[string]any)["nodes"].([]any); ok {
-			projects := make([]map[string]any, 0, len(resp))
-		nextproject:
-			for _, project := range resp {
-				topics := project.(map[string]any)["topics"].([]any)
-				for _, topic := range topics {
-					for _, excluded := range mirror.Except {
-						if project.(map[string]any)["fullPath"] == excluded {
-							continue nextproject
-						}
+	if resp, ok := response["group"].(map[string]any)["projects"].(map[string]any)["nodes"].([]any); ok {
+		projects := make([]map[string]any, 0, len(resp))
+	nextproject:
+		for _, project := range resp {
+			fullpath := project.(map[string]any)["fullPath"].(string)
+			ll.Debug("Found project %s", fullpath)
+			topics := project.(map[string]any)["topics"].([]any)
+			for _, topic := range topics {
+				ll.Debug("Project %s has topic %q", fullpath, topic)
+				for _, excluded := range mirror.Except {
+					if fullpath == excluded {
+						ll.Debug("Project %s is excluded", fullpath)
+						continue nextproject
 					}
+				}
 
-					for _, selectedTopics := range mirror.Topics {
-						if topic == selectedTopics {
-							if len(mirror.Only) > 0 {
-								for _, only := range mirror.Only {
-									if project.(map[string]any)["fullPath"] == only {
-										projects = append(projects, project.(map[string]any))
-										continue nextproject
-									}
+				for _, selectedTopics := range mirror.Topics {
+					if topic == selectedTopics {
+						ll.Debug("Project %s has selected topic %q", fullpath, topic)
+						if len(mirror.Only) > 0 {
+							ll.Debug("Mirror config defines only some projects")
+							for _, only := range mirror.Only {
+								if fullpath == only {
+									ll.Debug("Project %s is in only list, adding", fullpath)
+									projects = append(projects, project.(map[string]any))
+									continue nextproject
 								}
-							} else {
-								projects = append(projects, project.(map[string]any))
 							}
+
+							ll.Debug("Project %s is not in only list", fullpath)
+							continue nextproject
+						} else {
+							ll.Debug("Adding project %s", fullpath)
+							projects = append(projects, project.(map[string]any))
 						}
 					}
 				}
 			}
-
-			output = append(output, struct {
-				mirrorDef MirrorDefinition
-				projects  []map[string]any
-			}{
-				mirrorDef: mirror,
-				projects:  projects,
-			})
-		} else {
-			return output, fmt.Errorf("could not get projects")
 		}
+
+		output = append(output, struct {
+			mirrorDef   MirrorDefinition
+			projects    []map[string]any
+			configIndex int
+		}{
+			mirrorDef:   mirror,
+			projects:    projects,
+			configIndex: configIndex,
+		})
+	} else {
+		return output, fmt.Errorf("could not get projects")
+	}
+
+	return output, nil
+}
+
+func prepareSyncForGithubOrg(org string) (output []struct {
+	mirrorDef   MirrorDefinition
+	projects    []map[string]any
+	configIndex int
+}, err error) {
+	mirrors, found := githubOrgConfig(org)
+	if !found {
+		return nil, fmt.Errorf("org %s is not configured", org)
+	}
+
+	// Prepare every mirror in parallel, collecting results in output
+	var wg sync.WaitGroup
+	var preparedChan = make(chan []struct {
+		mirrorDef   MirrorDefinition
+		projects    []map[string]any
+		configIndex int
+	}, len(mirrors))
+
+	for i, mirror := range mirrors {
+		wg.Add(1)
+		go func(i int, mirror MirrorDefinition) {
+			defer wg.Done()
+			prepared, err := prepareSyncForMirror(org, i, mirror)
+			if err != nil {
+				ll.ErrorDisplay("while fetching projects for github org %s: could not prepare sync for mirror config orgs.%s[%d]", err, org, org, i)
+				return
+			}
+			preparedChan <- prepared
+		}(i, mirror)
+	}
+
+	go func() {
+		wg.Wait()
+		close(preparedChan)
+	}()
+
+	for prepared := range preparedChan {
+		output = append(output, prepared...)
 	}
 
 	return output, nil
@@ -411,12 +467,13 @@ func main() {
 		projects  []map[string]any
 		org       string
 		mirrorDef MirrorDefinition
+		i         int
 	}, 0)
 
 	for org := range config.Orgs {
 		projectsOfOrgByMirror, err := prepareSyncForGithubOrg(org)
 		if err != nil {
-			fmt.Printf("could not prepa sync for github org %s: %s\n", org, err)
+			ll.ErrorDisplay("could not prep sync for github org %s", err, org)
 			return
 		}
 
@@ -425,7 +482,9 @@ func main() {
 				projects  []map[string]any
 				org       string
 				mirrorDef MirrorDefinition
+				i         int
 			}{
+				i:         projectsOfOrg.configIndex,
 				projects:  projectsOfOrg.projects,
 				org:       org,
 				mirrorDef: projectsOfOrg.mirrorDef,
@@ -434,6 +493,42 @@ func main() {
 	}
 
 	var wg sync.WaitGroup
+
+	// mirroringPlan maps github org names to map of github repo names to [gitlab project path, index of config entry in config.Orgs]
+	mirroringPlan := make(map[string]map[string][]string)
+
+	for _, node := range nodes {
+		for _, project := range node.projects {
+			if _, ok := mirroringPlan[node.org]; !ok {
+				mirroringPlan[node.org] = make(map[string][]string)
+			}
+			githubName := githubNameFromGitlabPath(project["fullPath"].(string), node.mirrorDef)
+			mirroringPlan[node.org][githubName] = []string{project["fullPath"].(string), fmt.Sprintf("%d", node.i)}
+		}
+	}
+
+	fmt.Println()
+	for org, projects := range mirroringPlan {
+		ll.Log("Will sync", "green", "to github.com/[bold]%s[reset]:", org)
+		paths := make([]string, 0, len(projects))
+
+		sortedKeys := maps.Keys(projects)
+		slices.Sort(sortedKeys)
+
+		for _, project := range sortedKeys {
+			paths = append(paths, fmt.Sprintf("%-25s [dim]<--via .%s--[reset] %s", project, projects[project][1], projects[project][0]))
+		}
+
+		ll.Log("", "reset",
+			ll.List(paths, "[bold][dim]·[reset] %s", "\n"),
+		)
+	}
+	fmt.Println()
+
+	// --plan
+	if len(os.Args) > 1 && os.Args[1] == "--plan" {
+		return
+	}
 
 	for _, node := range nodes {
 		for _, project := range node.projects {

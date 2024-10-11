@@ -11,11 +11,13 @@ orgs:
   inp-net:
     - from: net7
     - from: inp-net
+    # Prefix churros/ projects with churros-, except for churros/churros
     - from: churros
       prefix: churros-
       except: [churros/churros]
     - from: churros
       only: [churros/churros]
+      prefix: ""
 
   tvn7: [from: tvn7]
   japan7: [from: japan7]
