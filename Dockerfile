@@ -1,5 +1,5 @@
 # Use the official Go image for building the application
-FROM golang:1.20-alpine AS build
+FROM golang:1.23-alpine AS build
 
 LABEL org.opencontainers.image.source=https://github.com/inp-net/automirror
 LABEL org.opencontainers.image.description="Automatically create push-mirrors from a gitlab instance to a github organization for public repositories having a certain topic"
