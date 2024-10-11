@@ -10,12 +10,18 @@ spec:
       template:
         spec:
           restartPolicy: OnFailure
+          volumes:
+            - name: automirror-config
+              configMap:
+                name: automirror-config
+                items: [key: config.yaml, path: config.yaml]
           containers:
             - name: automirror
               image: uwun/automirror:latest
               imagePullPolicy: IfNotPresent
+              volumeMounts:
+                - name: automirror-config
+                  mountPath: config.yaml
               envFrom:
-                - secretRef:
-                    name: automirror-secrets
-                - configMapRef:
-                    name: automirror-config
+                - secretRef: { name: automirror-secrets }
+                - configMapRef: { name: automirror-config }

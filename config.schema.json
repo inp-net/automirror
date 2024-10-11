@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/Config",
+  "$defs": {
+    "Config": {
+      "properties": {
+        "to": { "type": "string", "enum": ["github.com"] },
+        "from": { "type": "string" },
+        "orgs": {
+          "additionalProperties": {
+            "items": { "$ref": "#/$defs/MirrorDefinition" },
+            "type": "array"
+          },
+          "type": "object"
+        },
+        "defaults": { "$ref": "#/$defs/MirrorDefaults" }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": ["to", "from", "orgs"]
+    },
+    "MirrorDefaults": {
+      "properties": {
+        "except": { "items": { "type": "string" }, "type": "array" },
+        "only": { "items": { "type": "string" }, "type": "array" },
+        "prefix": { "type": "string" },
+        "suffix": { "type": "string" },
+        "topics": { "items": { "type": "string" }, "type": "array" },
+        "subgroups": {
+          "properties": { "flatten": { "type": "string" } },
+          "additionalProperties": false,
+          "type": "object",
+          "required": ["flatten"]
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "MirrorDefinition": {
+      "properties": {
+        "from": { "type": "string" },
+        "except": { "items": { "type": "string" }, "type": "array" },
+        "only": { "items": { "type": "string" }, "type": "array" },
+        "prefix": { "type": "string" },
+        "suffix": { "type": "string" },
+        "topics": { "items": { "type": "string" }, "type": "array" },
+        "subgroups": {
+          "properties": { "flatten": { "type": "string" } },
+          "additionalProperties": false,
+          "type": "object",
+          "required": ["flatten"]
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": ["from"]
+    }
+  }
+}

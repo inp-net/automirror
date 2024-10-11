@@ -6,6 +6,9 @@ metadata:
 
 data:
   GITHUB_USERNAME: net7toulouse
-  GITLAB_HOST: https://git.inpt.fr
-  GITLAB_REPOSITORY_SELECTOR: sur github
-  GITHUB_ORGANIZATION: inp-net
+  config.yaml: |-
+    to: github.com
+    from: git.example.com
+
+    orgs: 
+      my-github-org: [from: my-gitlab-org]

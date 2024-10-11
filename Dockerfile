@@ -1,21 +1,33 @@
-# Use the official Python image
-FROM python:3.11-slim
+# Use the official Go image for building the application
+FROM golang:1.23-alpine AS build
 
 LABEL org.opencontainers.image.source=https://github.com/inp-net/automirror
 LABEL org.opencontainers.image.description="Automatically create push-mirrors from a gitlab instance to a github organization for public repositories having a certain topic"
 LABEL org.opencontainers.image.licenses="MIT"
 
-# Set the working directory
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+# Copy the Go modules files
+COPY go.mod go.sum ./
 
-# Install poetry
-RUN pip install poetry
+# Download Go module dependencies
+RUN go mod download
 
-# Install project dependencies
-RUN poetry install
+# Copy the source code into the container
+COPY . .
 
-# Run the script
-CMD ["poetry", "run", "python", "main.py"]
+# Build the Go application
+RUN go build -o automirror .
+
+# Use a minimal base image to run the app
+FROM alpine:3.18
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the compiled binary from the build stage
+COPY --from=build /app/automirror /app/automirror
+
+# Run the compiled Go application
+CMD ["/app/automirror"]
