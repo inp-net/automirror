@@ -4,7 +4,7 @@ go 1.23.2
 
 require (
 	dario.cat/mergo v1.0.1
-	github.com/ewen-lbh/label-logger-go v0.0.0-20241011171958-f5949ce9485c
+	github.com/ewen-lbh/label-logger-go v0.1.1
 	github.com/google/uuid v1.6.0
 	github.com/invopop/jsonschema v0.12.0
 	github.com/joho/godotenv v1.5.1
