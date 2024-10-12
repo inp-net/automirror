@@ -21,7 +21,7 @@ COPY . .
 RUN go build -o automirror .
 
 # Use a minimal base image to run the app
-FROM alpine:3.18
+FROM alpine:3.20
 
 # Set the working directory inside the container
 WORKDIR /app
