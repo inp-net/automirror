@@ -8,6 +8,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/ewen-lbh/label-logger-go v0.0.0-20241011171958-f5949ce9485c h1:+C6y4fLOKNAuWT3Mgjolst6obAJRI0WYLNi+9ATFRwI=
 github.com/ewen-lbh/label-logger-go v0.0.0-20241011171958-f5949ce9485c/go.mod h1:ORVakjovWm+MfrGXmHBZAJvxNqYwAxdG3Sev8CXXChM=
+github.com/ewen-lbh/label-logger-go v0.0.0-20241011201023-2c63f6a50d58 h1:oS+iVtATEd6oi6vA0Zn8tWhL7K1KEyE5jS2u6K3I0cU=
+github.com/ewen-lbh/label-logger-go v0.0.0-20241011201023-2c63f6a50d58/go.mod h1:ORVakjovWm+MfrGXmHBZAJvxNqYwAxdG3Sev8CXXChM=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/gosuri/uilive v0.0.4 h1:hUEBpQDj8D8jXgtCdBu7sWsy5sbW/5GhuO8KBwJ2jyY=
