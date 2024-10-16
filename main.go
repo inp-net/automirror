@@ -344,13 +344,6 @@ func setGitLabMirror(repo map[string]interface{}, githubName string, githubOrg s
 		return fmt.Errorf("could not decode GitLab API response %q: %w", response.String(), err)
 	}
 
-	for _, mirror := range mirrors {
-		if redactUrl(mirror["url"].(string)) == redactUrl(githubRepoUrl) {
-			ll.Debug("Mirror already exists for %s at %s/%s to %s/%s.", repo["name"], config.From, repo["fullPath"], githubOrg, githubName)
-			return nil
-		}
-	}
-
 	// Delete existing mirrors for github.com
 	for _, mirror := range mirrors {
 		mirrorUrl, err := url.Parse(mirror["url"].(string))
@@ -359,7 +352,6 @@ func setGitLabMirror(repo map[string]interface{}, githubName string, githubOrg s
 		}
 		if mirrorUrl.Host == config.To {
 			mirrorID := mirror["id"].(float64)
-			ll.Log("Deleting", "yellow", "existing %s mirror on %s: %q [dim](mirror ID is %d)[reset]", config.To, repo["webUrl"], redactUrl(mirrorUrl.String()), int(mirrorID))
 			deleteUrl := fmt.Sprintf("https://%s/api/v4/projects/%s/remote_mirrors/%d", config.From, projectID, int(mirrorID))
 			req, err = http.NewRequest("DELETE", deleteUrl, nil)
 			if err != nil {
