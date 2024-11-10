@@ -222,7 +222,7 @@ func initializeGithubRepo(repo map[string]any, githubRepoUrl string) error {
 
 	// Set credentials
 	targetUrl.User = url.UserPassword(env.GitHubUsername, env.GitHubToken)
-	cmd = exec.Command("git", "push", githubRepoUrl, defaultBranch)
+	cmd = exec.Command("git", "push", targetUrl.String(), defaultBranch)
 	cmd.Dir = repoUID
 	_, err = cmd.Output()
 	if err != nil {
@@ -300,7 +300,7 @@ func upsertGitHubRepo(repo map[string]interface{}, mirrorConfigUsed MirrorDefini
 	return path, nil
 }
 
-// redactUrl removes sensitive information (username/password) from a URL.
+// redactUrl removes sensitive information (password) from a URL.
 func redactUrl(rawUrl string) string {
 	parsedUrl, _ := url.Parse(rawUrl)
 	if parsedUrl.User != nil {
