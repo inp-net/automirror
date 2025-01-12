@@ -3,5 +3,7 @@ automirror:
   resource_group: production
   rules:
   - if: '$CI_PIPELINE_SOURCE == "schedule"'
-  image: harbor.k8s.inpt.fr/net7_public/automirror:2.3.0
-  script: automirror --config="$CONFIG_FILE"
+  image: 
+    name: harbor.k8s.inpt.fr/net7_public/automirror:2.3.0
+    entrypoint: ['']
+  script: [/app/automirror --config "$CONFIG_FILE"]
