@@ -1,0 +1,7 @@
+automirror:
+  stage: deploy
+  resource_group: production
+  rules:
+  - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  image: harbor.k8s.inpt.fr/net7_public/automirror:2.3.0
+  script: automirror --config="$CONFIG_FILE"
