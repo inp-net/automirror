@@ -586,7 +586,12 @@ func main() {
 		return
 	}
 
-	err = loadConfig("config.yaml")
+	configPath := "config.yaml"
+	if len(os.Args) > 2 && os.Args[1] == "--config" {
+		configPath = os.Args[2]
+	}
+
+	err = loadConfig(configPath)
 	if err != nil {
 		fmt.Printf("could not load config: %s\n", err)
 		return
