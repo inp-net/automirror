@@ -4,6 +4,6 @@ automirror:
   rules:
   - if: '$CI_PIPELINE_SOURCE == "schedule"'
   image: 
-    name: harbor.k8s.inpt.fr/net7_public/automirror:2.3.0
+    name: $CI_REGISTRY_IMAGE:2.3.0
     entrypoint: ['']
   script: [/app/automirror --config "$CONFIG_FILE"]
