@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/invopop/jsonschema v0.12.0
 	github.com/joho/godotenv v1.5.1
-	golang.org/x/exp v0.0.0-20241204233417-43b7b7cde48d
+	golang.org/x/exp v0.0.0-20250128182459-e0ece0dbea4c
 	gopkg.in/yaml.v3 v3.0.1
 )
 
