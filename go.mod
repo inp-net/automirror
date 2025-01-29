@@ -6,7 +6,7 @@ require (
 	dario.cat/mergo v1.0.1
 	github.com/ewen-lbh/label-logger-go v0.1.3
 	github.com/google/uuid v1.6.0
-	github.com/invopop/jsonschema v0.12.0
+	github.com/invopop/jsonschema v0.13.0
 	github.com/joho/godotenv v1.5.1
 	golang.org/x/exp v0.0.0-20250128182459-e0ece0dbea4c
 	gopkg.in/yaml.v3 v3.0.1
