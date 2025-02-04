@@ -25,6 +25,14 @@
           --opt build-arg:VERSION=$1 \
           --opt build-arg:COMMIT=$CI_COMMIT_SHA \
           --output type=image,name=$CI_REGISTRY_IMAGE:$1,push=true
+
+        buildctl-daemonless.sh build \
+          --frontend=dockerfile.v0 \
+          --local context=. \
+          --local dockerfile=. \
+          --opt build-arg:VERSION=$1 \
+          --opt build-arg:COMMIT=$CI_COMMIT_SHA \
+          --output type=image,name=$CI_REGISTRY_IMAGE:latest,push=true
       }
 
 deploy:

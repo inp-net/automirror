@@ -18,6 +18,7 @@ RUN go mod download
 COPY . .
 
 ARG VERSION=dev
+ARG COMMIT=unknown
 
 # Build the Go application
 RUN go build --ldflags "-X 'main.Version=$VERSION' -X 'main.Commit=$COMMIT'" -o automirror .
