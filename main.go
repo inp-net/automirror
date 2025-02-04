@@ -304,8 +304,9 @@ func upsertGitHubRepo(repo map[string]interface{}, mirrorConfigUsed MirrorDefini
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("GitHub API error: %s: %s", resp.Status, body)
+		respBody, _ := io.ReadAll(resp.Body)
+		reqBody, _ := io.ReadAll(req.Body)
+		return "", fmt.Errorf("GitHub API error: %s: %s: for request: %s", resp.Status, respBody, reqBody)
 	}
 
 	return path, nil
