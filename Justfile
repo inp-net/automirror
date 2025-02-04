@@ -5,3 +5,6 @@ dev:
 
 build:
 	go build -o bin/main main.go
+
+updateschema:
+	go run main.go --print-jsonschema > config.schema.json

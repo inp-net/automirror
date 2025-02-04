@@ -15,31 +15,33 @@ import (
 	"golang.org/x/exp/slices"
 
 	"dario.cat/mergo"
-	ll "github.com/ewen-lbh/label-logger-go"
 	"github.com/google/uuid"
+	ll "github.com/gwennlbh/label-logger-go"
 	"github.com/invopop/jsonschema"
 	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
 )
 
 type MirrorDefaults struct {
-	Except    []string `json:"except,omitempty"`
-	Only      []string `json:"only,omitempty"`
-	Prefix    string   `json:"prefix,omitempty"`
-	Suffix    string   `json:"suffix,omitempty"`
-	Topics    []string `json:"topics,omitempty"`
+	Except    []string          `json:"except,omitempty"`
+	Only      []string          `json:"only,omitempty"`
+	Prefix    string            `json:"prefix,omitempty"`
+	Suffix    string            `json:"suffix,omitempty"`
+	Topics    []string          `json:"topics,omitempty"`
+	Renames   map[string]string `json:"renames,omitempty"`
 	Subgroups struct {
 		Flatten string `json:"flatten"`
 	} `json:"subgroups,omitempty"`
 }
 
 type MirrorDefinition struct {
-	From      string   `json:"from"`
-	Except    []string `json:"except,omitempty"`
-	Only      []string `json:"only,omitempty"`
-	Prefix    string   `json:"prefix,omitempty"`
-	Suffix    string   `json:"suffix,omitempty"`
-	Topics    []string `json:"topics,omitempty"`
+	From      string            `json:"from"`
+	Except    []string          `json:"except,omitempty"`
+	Only      []string          `json:"only,omitempty"`
+	Prefix    string            `json:"prefix,omitempty"`
+	Suffix    string            `json:"suffix,omitempty"`
+	Topics    []string          `json:"topics,omitempty"`
+	Renames   map[string]string `json:"renames,omitempty"`
 	Subgroups struct {
 		Flatten string `json:"flatten"`
 	} `json:"subgroups,omitempty"`
@@ -154,6 +156,7 @@ func githubOrgConfig(org string) ([]MirrorDefinition, bool) {
 				Suffix:    config.Defaults.Suffix,
 				Topics:    config.Defaults.Topics,
 				Subgroups: config.Defaults.Subgroups,
+				Renames:   config.Defaults.Renames,
 			})
 		}
 		return merged, true
@@ -401,6 +404,12 @@ func setGitLabMirror(repo map[string]interface{}, githubName string, githubOrg s
 func githubNameFromGitlabPath(path string, mirrorConfigUsed MirrorDefinition) string {
 	pathParts := strings.Split(path, "/")[1:]
 	path = strings.Join(pathParts, mirrorConfigUsed.Subgroups.Flatten)
+	for from, to := range mirrorConfigUsed.Renames {
+		if from == path {
+			path = to
+			break
+		}
+	}
 	path = fmt.Sprintf("%s%s%s", mirrorConfigUsed.Prefix, path, mirrorConfigUsed.Suffix)
 	return path
 }

@@ -26,6 +26,10 @@
         "prefix": { "type": "string" },
         "suffix": { "type": "string" },
         "topics": { "items": { "type": "string" }, "type": "array" },
+        "renames": {
+          "additionalProperties": { "type": "string" },
+          "type": "object"
+        },
         "subgroups": {
           "properties": { "flatten": { "type": "string" } },
           "additionalProperties": false,
@@ -44,6 +48,10 @@
         "prefix": { "type": "string" },
         "suffix": { "type": "string" },
         "topics": { "items": { "type": "string" }, "type": "array" },
+        "renames": {
+          "additionalProperties": { "type": "string" },
+          "type": "object"
+        },
         "subgroups": {
           "properties": { "flatten": { "type": "string" } },
           "additionalProperties": false,
