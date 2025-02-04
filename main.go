@@ -250,6 +250,7 @@ func upsertGitHubRepo(repo map[string]interface{}, mirrorConfigUsed MirrorDefini
 	path := githubNameFromGitlabPath(repo["fullPath"].(string), mirrorConfigUsed)
 
 	description := fmt.Sprintf("%.250s (mirror)", repo["description"])
+	description = strings.ReplaceAll(description, "\r\n", "  ")
 	description = strings.ReplaceAll(description, "\n", "  ")
 
 	checkUrl := fmt.Sprintf("https://github.com/%s/%s", githubOrg, path)
@@ -261,6 +262,8 @@ func upsertGitHubRepo(repo map[string]interface{}, mirrorConfigUsed MirrorDefini
 	client := &http.Client{}
 	var req *http.Request
 
+	// For debugging when an error occurs
+	var jsonBodyString string
 	if resp.StatusCode == 200 {
 		ll.Log("Updating", "cyan", "%s/%s", githubOrg, path)
 		url := fmt.Sprintf("https://api.github.com/repos/%s/%s", githubOrg, path)
@@ -270,6 +273,7 @@ func upsertGitHubRepo(repo map[string]interface{}, mirrorConfigUsed MirrorDefini
 			"homepage":    repo["webUrl"],
 		}
 		jsonBody, _ := json.Marshal(reqBody)
+		jsonBodyString = string(jsonBody)
 
 		req, err = http.NewRequest("PATCH", url, bytes.NewBuffer(jsonBody))
 		if err != nil {
@@ -285,6 +289,7 @@ func upsertGitHubRepo(repo map[string]interface{}, mirrorConfigUsed MirrorDefini
 			"homepage":    repo["webUrl"],
 		}
 		jsonBody, _ := json.Marshal(reqBody)
+		jsonBodyString = string(jsonBody)
 
 		req, err = http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
 		if err != nil {
@@ -305,8 +310,7 @@ func upsertGitHubRepo(repo map[string]interface{}, mirrorConfigUsed MirrorDefini
 
 	if resp.StatusCode >= 400 {
 		respBody, _ := io.ReadAll(resp.Body)
-		reqBody, _ := io.ReadAll(req.Body)
-		return "", fmt.Errorf("GitHub API error: %s: %s: for request: %s", resp.Status, respBody, reqBody)
+		return "", fmt.Errorf("GitHub API error: %s: %s: for request: %s", resp.Status, respBody, jsonBodyString)
 	}
 
 	return path, nil
