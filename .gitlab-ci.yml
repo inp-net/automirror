@@ -41,7 +41,6 @@ deploy:
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
   script:
     - dockerbuild $CI_COMMIT_TAG
-    - dockerbuild latest
 
 automirror:
   stage: deploy
