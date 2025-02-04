@@ -45,7 +45,7 @@ Credentials are set with environment variables. Automirror will also load a .env
 Configuration of mirrors is defined in a YAML file. A JSON Schema is available at `config.schema.json`, and example config files are in `examples/`.
 
 ```yaml
-# yaml-language-server: $schema=https://raw.githubusercontent.com/ewen-lbh/automirror/main/config.schema.json
+# yaml-language-server: $schema=https://git.inpt.fr/inp-net/automirror/-/raw/main/config.schema.json
 to: github.com # Target git host. Only github.com is supported for now.
 from: my-gitlab.example.com # Source git host. Only gitlab hosts are supported for now.
 
