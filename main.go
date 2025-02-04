@@ -250,6 +250,7 @@ func upsertGitHubRepo(repo map[string]interface{}, mirrorConfigUsed MirrorDefini
 	path := githubNameFromGitlabPath(repo["fullPath"].(string), mirrorConfigUsed)
 
 	description := fmt.Sprintf("%.250s (mirror)", repo["description"])
+	description = strings.ReplaceAll(description, "\n", "  ")
 
 	checkUrl := fmt.Sprintf("https://github.com/%s/%s", githubOrg, path)
 	resp, err := http.Get(checkUrl)
