@@ -1,9 +1,44 @@
+.builder:
+  stage: build
+  image: 
+    name: moby/buildkit:rootless
+    entrypoint: [sh, -c]
+  variables:
+    BUILDKITD_FLAGS: --oci-worker-no-process-sandbox
+  before_script:
+    - |
+      mkdir -p ~/.docker && cat > ~/.docker/config.json <<EOF
+      {
+        "auths": {
+          "$CI_REGISTRY": {
+            "auth": "$(echo -n "$CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD" | base64)"
+          }
+        }
+      }
+      EOF
+    - |
+      dockerbuild() {
+        buildctl-daemonless.sh build \
+          --frontend=dockerfile.v0 \
+          --local context=. \
+          --local dockerfile=. \
+          --output type=image,name=$CI_REGISTRY_IMAGE:$1,push=true
+      }
+
+deploy:
+  extends: .builder
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  script:
+    - dockerbuild $CI_COMMIT_TAG
+    - dockerbuild latest
+
 automirror:
   stage: deploy
   resource_group: production
   rules:
   - if: '$CI_PIPELINE_SOURCE == "schedule"'
   image: 
-    name: $CI_REGISTRY_IMAGE:2.3.0
+    name: $CI_REGISTRY_IMAGE:latest
     entrypoint: ['']
   script: [/app/automirror --config "$CONFIG_FILE"]
