@@ -22,6 +22,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+var Version string
+var Commit string
+
 type MirrorDefaults struct {
 	Except    []string          `json:"except,omitempty"`
 	Only      []string          `json:"only,omitempty"`
@@ -588,6 +591,8 @@ func main() {
 		fmt.Println(string(out))
 		return
 	}
+
+	ll.Info("Starting automirror v%s (%s)", Version, Commit)
 
 	err := loadEnv()
 	if err != nil {

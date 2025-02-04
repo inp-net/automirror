@@ -17,8 +17,10 @@ RUN go mod download
 # Copy the source code into the container
 COPY . .
 
+ARG VERSION=dev
+
 # Build the Go application
-RUN go build -o automirror .
+RUN go build --ldflags "-X 'main.Version=$VERSION' -X 'main.Commit=$COMMIT'" -o automirror .
 
 # Use a minimal base image to run the app
 FROM alpine:3.21
