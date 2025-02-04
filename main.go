@@ -249,7 +249,7 @@ func upsertGitHubRepo(repo map[string]interface{}, mirrorConfigUsed MirrorDefini
 
 	path := githubNameFromGitlabPath(repo["fullPath"].(string), mirrorConfigUsed)
 
-	description := fmt.Sprintf("%.200s · Mirror of %s.", repo["description"], repo["webUrl"])
+	description := fmt.Sprintf("%.250s (mirror)", repo["description"])
 
 	checkUrl := fmt.Sprintf("https://github.com/%s/%s", githubOrg, path)
 	resp, err := http.Get(checkUrl)
@@ -266,6 +266,7 @@ func upsertGitHubRepo(repo map[string]interface{}, mirrorConfigUsed MirrorDefini
 
 		reqBody := map[string]interface{}{
 			"description": description,
+			"homepage":    repo["webUrl"],
 		}
 		jsonBody, _ := json.Marshal(reqBody)
 
@@ -280,6 +281,7 @@ func upsertGitHubRepo(repo map[string]interface{}, mirrorConfigUsed MirrorDefini
 		reqBody := map[string]interface{}{
 			"name":        path,
 			"description": description,
+			"homepage":    repo["webUrl"],
 		}
 		jsonBody, _ := json.Marshal(reqBody)
 
