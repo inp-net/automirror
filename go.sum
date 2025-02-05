@@ -14,6 +14,8 @@ github.com/gosuri/uiprogress v0.0.1 h1:0kpv/XY/qTmFWl/SkaJykZXrBBzwwadmW8fRb7RJS
 github.com/gosuri/uiprogress v0.0.1/go.mod h1:C1RTYn4Sc7iEyf6j8ft5dyoZ4212h8G1ol9QQluh5+0=
 github.com/gwennlbh/label-logger-go v0.1.4 h1:ymZGH3WzHGuCVUit613OEYH48gvYQhg37rn31mylYF8=
 github.com/gwennlbh/label-logger-go v0.1.4/go.mod h1:U6iHdG06P6aBrX5WuSotkvOt06V+Cts8+Azrf+uW708=
+github.com/gwennlbh/label-logger-go v0.1.5 h1:8+oFLE9tFo4HRhi9k9H3e8zXNdKktxFsQ2Bu0RK2P+s=
+github.com/gwennlbh/label-logger-go v0.1.5/go.mod h1:U6iHdG06P6aBrX5WuSotkvOt06V+Cts8+Azrf+uW708=
 github.com/invopop/jsonschema v0.13.0 h1:KvpoAJWEjR3uD9Kbm2HWJmqsEaHt8lBUpd0qHcIi21E=
 github.com/invopop/jsonschema v0.13.0/go.mod h1:ffZ5Km5SWWRAIN6wbDXItl95euhFz2uON45H2qjYt+0=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
