@@ -3,7 +3,7 @@ module git.inpt.fr/inp-net/automirror
 go 1.23.2
 
 require (
-	dario.cat/mergo v1.0.1
+	dario.cat/mergo v1.0.2
 	github.com/google/uuid v1.6.0
 	github.com/gwennlbh/label-logger-go v0.1.5
 	github.com/invopop/jsonschema v0.13.0
