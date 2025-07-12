@@ -24,7 +24,7 @@ ARG COMMIT=unknown
 RUN go build --ldflags "-X 'main.Version=$VERSION' -X 'main.Commit=$COMMIT'" -o automirror .
 
 # Use a minimal base image to run the app
-FROM alpine:3.21
+FROM alpine:3.22
 
 # Set the working directory inside the container
 WORKDIR /app
