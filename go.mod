@@ -8,7 +8,7 @@ require (
 	github.com/gwennlbh/label-logger-go v0.1.5
 	github.com/invopop/jsonschema v0.13.0
 	github.com/joho/godotenv v1.5.1
-	golang.org/x/exp v0.0.0-20250711185948-6ae5c78190dc
+	golang.org/x/exp v0.0.0-20250808145144-a408d31f581a
 	gopkg.in/yaml.v3 v3.0.1
 )
 
