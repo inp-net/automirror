@@ -1,6 +1,8 @@
 module git.inpt.fr/inp-net/automirror
 
-go 1.23.2
+go 1.24.0
+
+toolchain go1.24.7
 
 require (
 	dario.cat/mergo v1.0.2
@@ -8,7 +10,7 @@ require (
 	github.com/gwennlbh/label-logger-go v0.1.5
 	github.com/invopop/jsonschema v0.13.0
 	github.com/joho/godotenv v1.5.1
-	golang.org/x/exp v0.0.0-20250711185948-6ae5c78190dc
+	golang.org/x/exp v0.0.0-20251002181428-27f1f14c8bb9
 	gopkg.in/yaml.v3 v3.0.1
 )
 
